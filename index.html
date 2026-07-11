@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dining Near Stewart Memorial | Regional Conference 2026</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --burgundy: #13234d;
+    --burgundy-deep: #0a1631;
+    --gold: #c99a35;
+    --gold-soft: #e3cd88;
+    --cream: #f7f5ef;
+    --card: #ffffff;
+    --ink: #17223d;
+    --ink-soft: #5c6474;
+    --line: #e0e2e8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--cream); color: var(--ink); font-family: "Source Sans 3", system-ui, sans-serif; line-height: 1.55; }
+  a { color: var(--burgundy); }
+
+  .masthead { background: linear-gradient(160deg, var(--burgundy) 0%, var(--burgundy-deep) 100%); color: #fdf6e9; text-align: center; padding: 34px 20px 30px; border-bottom: 3px solid var(--gold); }
+  .eyebrow { font-size: 0.72rem; letter-spacing: 0.28em; text-transform: uppercase; color: var(--gold-soft); font-weight: 600; margin: 0 0 10px; }
+  .masthead h1 { font-family: "Cormorant Garamond", serif; font-weight: 700; font-size: clamp(1.9rem, 5vw, 3rem); line-height: 1.05; margin: 0 0 6px; }
+  .masthead .host { font-family: "Cormorant Garamond", serif; font-size: clamp(1.05rem, 2.6vw, 1.35rem); color: #f3e4c4; margin: 0; }
+  .rule { width: 66px; height: 2px; margin: 16px auto 14px; background: var(--gold); }
+  .masthead .dates { font-size: 0.9rem; letter-spacing: 0.06em; color: #efe0c0; margin: 0; }
+
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 26px 18px 60px; }
+  .intro { text-align: center; max-width: 660px; margin: 4px auto 22px; color: var(--ink-soft); font-size: 1rem; }
+
+  .filters { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 0 auto 22px; }
+  .chip { border: 1px solid var(--line); background: #fff; color: var(--ink); font-family: inherit; font-size: 0.86rem; font-weight: 600; padding: 7px 15px; border-radius: 999px; cursor: pointer; transition: all .15s ease; }
+  .chip:hover { border-color: var(--gold); }
+  .chip.active { background: var(--burgundy); border-color: var(--burgundy); color: #fdf6e9; }
+
+  #map { height: 500px; width: 100%; border-radius: 10px; border: 1px solid var(--line); box-shadow: 0 8px 26px rgba(10,22,49,0.12); margin-bottom: 12px; z-index: 1; }
+  .map-hint { text-align: center; font-size: 0.8rem; color: var(--ink-soft); margin: 0 0 30px; }
+
+  .pin-restaurant { background: var(--gold); color: var(--burgundy-deep); width: 24px; height: 24px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.68rem; }
+  .pin-restaurant span { transform: rotate(45deg); }
+  .pin-church { background: var(--burgundy); width: 34px; height: 34px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 3px solid var(--gold); box-shadow: 0 3px 7px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; }
+  .pin-church span { transform: rotate(45deg); color: var(--gold-soft); font-size: 1rem; font-weight: 700; }
+
+  .leaflet-popup-content-wrapper { border-radius: 8px; }
+  .leaflet-popup-content { margin: 12px 14px; font-family: "Source Sans 3", sans-serif; }
+  .pop-name { font-family: "Cormorant Garamond", serif; font-weight: 700; font-size: 1.2rem; color: var(--burgundy); margin: 0 0 2px; }
+  .pop-meta { font-size: 0.82rem; color: var(--ink-soft); margin: 0 0 8px; }
+  .pop-links { display: flex; gap: 8px; }
+  .pop-links a { text-decoration: none; font-size: 0.8rem; font-weight: 600; padding: 5px 10px; border-radius: 6px; }
+  .pop-dir { background: var(--burgundy); color: #fff !important; }
+  .pop-info { border: 1px solid var(--gold); color: var(--burgundy) !important; }
+
+  .section-label { font-family: "Cormorant Garamond", serif; font-size: 1.6rem; font-weight: 700; color: var(--burgundy); text-align: center; margin: 6px 0 4px; }
+  .section-sub { text-align: center; color: var(--ink-soft); font-size: 0.9rem; margin: 0 0 22px; }
+  .count { text-align: center; font-size: 0.82rem; color: var(--ink-soft); margin: 0 0 18px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px 16px 14px; cursor: pointer; transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease; display: flex; flex-direction: column; }
+  .card:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(10,22,49,0.14); border-color: var(--gold); }
+  .card-cat { font-size: 0.66rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 700; color: var(--gold); margin: 0 0 4px; }
+  .card h3 { font-family: "Cormorant Garamond", serif; font-size: 1.3rem; font-weight: 700; color: var(--ink); margin: 0 0 4px; line-height: 1.12; }
+  .card .note { font-size: 0.85rem; color: var(--ink-soft); margin: 0 0 10px; }
+  .card .addr { font-size: 0.8rem; color: var(--ink-soft); margin: 0 0 8px; }
+  .card .stats { font-size: 0.82rem; color: var(--ink-soft); display: flex; gap: 12px; flex-wrap: wrap; margin: 0 0 12px; }
+  .card .stats b { color: var(--ink); }
+  .star { color: var(--gold); }
+  .card-actions { display: flex; gap: 8px; margin-top: auto; }
+  .btn { text-decoration: none; text-align: center; flex: 1; font-size: 0.8rem; font-weight: 600; padding: 8px 6px; border-radius: 7px; }
+  .btn-dir { background: var(--burgundy); color: #fff; }
+  .btn-dir:hover { background: var(--burgundy-deep); }
+  .btn-info { border: 1px solid var(--gold); color: var(--burgundy); }
+  .btn-info:hover { background: #faf3e2; }
+  .empty { text-align: center; color: var(--ink-soft); padding: 30px 0; display: none; }
+
+  footer { margin-top: 44px; text-align: center; border-top: 1px solid var(--line); padding-top: 22px; color: var(--ink-soft); font-size: 0.86rem; }
+  footer .church { font-family: "Cormorant Garamond", serif; font-size: 1.2rem; color: var(--burgundy); font-weight: 700; }
+
+  @media (max-width: 560px) { #map { height: 400px; } }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <p class="eyebrow">Southeast Alabama Regional Annual Conference &middot; 2026</p>
+  <h1>Where to Eat Near the Conference</h1>
+  <p class="host">Hosted by Stewart Memorial &amp; Taylor Chapel C.M.E. Churches &middot; Mobile, Alabama</p>
+  <div class="rule"></div>
+  <p class="dates">July 15&ndash;17, 2026 &middot; 1266 Dr. Martin Luther King Jr. Ave.</p>
+</header>
+
+<div class="wrap">
+  <p class="intro">
+    A guide to good places to eat during the conference, from soul food and
+    fresh Gulf seafood to barbecue, tacos, and fine dining downtown. Tap any pin
+    or card for directions and details. A few favorites sit across the bay on the
+    causeway, so use the filters to narrow things down.
+  </p>
+
+  <div class="filters" id="filters"></div>
+
+  <div id="map"></div>
+  <p class="map-hint">The burgundy pin marks Stewart Memorial. Gold pins are restaurants.</p>
+
+  <h2 class="section-label">The List</h2>
+  <p class="section-sub">Distances are straight-line from the church, nearest first.</p>
+  <p class="count" id="count"></p>
+
+  <div class="grid" id="grid"></div>
+  <p class="empty" id="empty">No restaurants in this category. Choose another filter above.</p>
+
+  <footer>
+    <p class="church">Stewart Memorial C.M.E. Church</p>
+    <p>1266 Dr. Martin Luther King Jr. Ave., Mobile, AL 36603</p>
+    <p style="font-size:0.78rem;">Hours change and some spots close early or on certain days. Please call ahead for large groups.</p>
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+  const CHURCH = { lat: 30.699912, lng: -88.063667 };
+
+  const RESTAURANTS = [
+    { name: "Down the Bay Cafe", cat: "Soul Food & Southern", addr: "962 S Broad St", lat: 30.6664263, lng: -88.0562598, price: "$", place: "ChIJJeJaIq5PmogRD5JywFVlGjI", note: "Casual local cafe with breakfast and soul food favorites." },
+    { name: "Velvet Pig", cat: "Barbecue", addr: "755 Monroe St", lat: 30.6846245, lng: -88.0505516, price: "$$", place: "ChIJlZv5W6tPmogReRTeEW4RiQw", note: "Upscale barbecue and creative pork dishes." },
+    { name: "Adams Flavor House", cat: "Pub & Casual", addr: "959 Government St", lat: 30.685194, lng: -88.0560386, price: "$", place: "ChIJyxyTMApPmogRXuzK80UVeCg", note: "Burgers, wings, and late-night comfort food." },
+    { name: "Front Yard Tacos", cat: "Latin & Mexican", addr: "306 St Anthony St", lat: 30.694176, lng: -88.047102, price: "$", place: "ChIJbWNFc7hPmogR01Vqea-O9UU", note: "Outdoor spot for creative street tacos and breakfast." },
+    { name: "Stevie's Kitchen Midtown", cat: "Seafood", addr: "110 S Florida St", lat: 30.6841694, lng: -88.1010352, price: "$$", place: "ChIJHSWWi3FNmogRhJyaDRi6kmw", note: "New Orleans-style seafood and Cajun specialties." },
+    { name: "Wintzell's Oyster House", cat: "Seafood", addr: "605 Dauphin St", lat: 30.688897, lng: -88.049692, price: "$$", place: "ChIJOTFiH9NPmogRJls6dtDzc0Y", note: "Historic landmark for raw, fried, and charbroiled oysters." },
+    { name: "Chuck's Fish", cat: "Seafood", addr: "551 Dauphin St", lat: 30.689314, lng: -88.048777, price: "$$$", place: "ChIJBUbrBtNPmogRv14IE13dfsc", note: "Upscale Gulf seafood, steaks, and a sushi bar." },
+    { name: "The Noble South", cat: "Soul Food & Southern", addr: "203 Dauphin St", lat: 30.69132, lng: -88.0430179, price: "$$", place: "ChIJ4X_zzdBPmogRp6NbiEJze4o", note: "Farm-to-table modern heritage Southern dishes." },
+    { name: "Dauphin's", cat: "Steakhouse & Fine Dining", addr: "107 St Francis St (34th floor)", lat: 30.692723, lng: -88.041429, price: "$$$", place: "ChIJbRE1XNdPmogRakLmuQAk-DI", note: "Southern Creole classics with panoramic city views." },
+    { name: "NoJa", cat: "Steakhouse & Fine Dining", addr: "6 N Jackson St", lat: 30.691232, lng: -88.0448232, price: "$$$", place: "ChIJJYzvNdFPmogRi7fjwgYsa1o", note: "Elegant fine dining, Mediterranean and Asian flavors." },
+    { name: "The Cheese Cottage", cat: "Cafe, Breakfast & Sandwiches", addr: "650 St Louis St", lat: 30.691558, lng: -88.051678, price: "$$", place: "ChIJVTDEqCxOmogRwqkSH3sCDh8", note: "Custom cheese boards and sandwiches, lunch and dinner." },
+    { name: "Squid Ink Eats & Drinks", cat: "Pub & Casual", addr: "102 Dauphin St", lat: 30.692318, lng: -88.041274, price: "$$", place: "ChIJtzMazNBPmogRB-d3vkRuAkk", note: "Trendy gastro-pub with coastal cuisine and cocktails." },
+    { name: "Moe's Original BBQ", cat: "Barbecue", addr: "701 Spring Hill Ave", lat: 30.688657, lng: -88.051429, price: "$", place: "ChIJSWDMKS1OmogRazzR6OKqMac", note: "Alabama-style pit barbecue and traditional sides." },
+    { name: "Debris Po-Boys & Drinks", cat: "Pub & Casual", addr: "276 Dauphin St", lat: 30.691077, lng: -88.044724, price: "$$", place: "ChIJYTLMdMVPmogRdO3BP1sn_ew", note: "New Orleans roast beef debris and seafood po-boys." },
+    { name: "Bob's Downtown Diner", cat: "Cafe, Breakfast & Sandwiches", addr: "263 St Francis St", lat: 30.6918041, lng: -88.0451364, price: "$", place: "ChIJ_b08tNZPmogRNxwK9YdHRSM", note: "Classic diner known for hearty breakfasts and burgers." },
+    { name: "Bistro St. Emanuel", cat: "Soul Food & Southern", addr: "165 St Emanuel St", lat: 30.6874046, lng: -88.0409011, price: "$$", place: "ChIJOyfElvVPmogRqYm_NnqOjnc", note: "Refined Southern coastal dishes near Fort Conde." },
+    { name: "The Royal Scam", cat: "Steakhouse & Fine Dining", addr: "72 S Royal St", lat: 30.6906768, lng: -88.0404827, price: "$$", place: "ChIJjcGtEdpPmogR-8UYTcpo0Mo", note: "Steak and seafood with an inviting patio." },
+    { name: "Roosters Tacos & Tequila", cat: "Latin & Mexican", addr: "211 Dauphin St", lat: 30.6911562, lng: -88.0432433, price: "$", place: "ChIJhy5p0dBPmogR7rVtGUT5noI", note: "Vibrant Latin street food, tacos, and quesadillas. (Formerly Roosters Latin American Cafe.)" },
+    { name: "LoDa Bier Garten", cat: "Pub & Casual", addr: "251 Dauphin St", lat: 30.691014, lng: -88.043963, price: "$$", place: "ChIJHSKuKNFPmogROhRfdruP4pM", note: "Big tavern with 100+ beers on tap and gourmet burgers." },
+    { name: "T.P. Crockmier's", cat: "Pub & Casual", addr: "250 Dauphin St", lat: 30.6912785, lng: -88.0440991, price: "$$", place: "ChIJPZE5Je9NmogRH3tEKZjMK74", note: "Longtime Mobile staple for burgers and seafood platters." },
+    { name: "Blind Mule", cat: "Pub & Casual", addr: "57 N Claiborne St", lat: 30.691825, lng: -88.046395, price: "$$", place: "ChIJ8RdKAdRPmogRUaxI40kXsU8", note: "Quirky tavern with Creole bar bites and local seafood." },
+    { name: "Mediterranean Sandwich Co.", cat: "International", addr: "274 Dauphin St", lat: 30.6910232, lng: -88.0446234, price: "$", place: "ChIJlXAIN9FPmogRhjzB0SCcQT8", note: "Pita wraps, shawarma, and Greek-style flatbreads." },
+    { name: "Ruby Slipper Cafe", cat: "Cafe, Breakfast & Sandwiches", addr: "100 N Royal St", lat: 30.694092, lng: -88.041262, price: "$$", place: "ChIJ_YTP7j1PmogRS13ozn_mgoI", note: "Bustling breakfast and brunch with inventive Benedicts." },
+    { name: "Iron Hand Brewing", cat: "Pub & Casual", addr: "206 State St", lat: 30.695561, lng: -88.045379, price: "$$", place: "ChIJp3OXfSJPmogRxpiU7QA6gOk", note: "Local brewpub with house-made beers and a rotating menu." },
+    { name: "Slurp Society Ramen Shop", cat: "International", addr: "609 Dauphin St", lat: 30.6889561, lng: -88.0499055, price: "$$", place: "ChIJSSH9dolPmogR6ytChFzmhx4", note: "Slow-simmered Japanese ramen and unique appetizers." },
+    { name: "Le Moyne's Chophouse", cat: "Steakhouse & Fine Dining", addr: "251 Government St", lat: 30.688953, lng: -88.0432771, price: "$$$", place: "ChIJSXYbnFpPmogRTPyfO66SU7c", note: "Luxury steakhouse with Wagyu cuts and coastal starters." },
+    { name: "Mama's over Dauphin", cat: "Soul Food & Southern", addr: "220 Dauphin St", lat: 30.6913727, lng: -88.0436511, price: "$", place: "ChIJT7iRKtFPmogRGGxRRHiFtKw", note: "Weekday favorite for Southern meat-and-three and fried chicken." },
+    { name: "Heroes Sports Bar & Grille", cat: "Pub & Casual", addr: "273 Dauphin St", lat: 30.6906792, lng: -88.0446135, price: "$", place: "ChIJeZw7ONFPmogRs23WUMRUqW0", note: "Sports hub for wings, burgers, and local draft beers." },
+    { name: "La Delicia Mexican Brunch & Cantina", cat: "Latin & Mexican", addr: "615 Dauphin St", lat: 30.6888628, lng: -88.0500217, price: "$$", place: "ChIJR-ONDwBPmogRkGbAwmgor-k", note: "Upscale Mexican street food and craft tequila. (Now at the former El Papi address.)" },
+    { name: "Felix's Fish Camp", cat: "Seafood", addr: "1530 Battleship Pkwy (causeway)", lat: 30.6789258, lng: -87.997108, price: "$$$", place: "ChIJZdRh_UNFmogRK7VdHq8HgJo", note: "Scenic causeway dining with premier Gulf seafood on the water." },
+    { name: "Ralph & Kacoo's", cat: "Seafood", addr: "1595 Battleship Pkwy (causeway)", lat: 30.6801366, lng: -87.995022, price: "$$", place: "ChIJDQUZ2UZFmogRWt9oyXSvSpo", note: "Big portions of Cajun-style seafood, family-friendly." },
+    { name: "Pat's Deli & Yogurt", cat: "Cafe, Breakfast & Sandwiches", addr: "3103 Airport Blvd Ste 150", lat: 30.6753577, lng: -88.1161371, price: "$$", place: "ChIJ5euZib1NmogRNv7tfOS0Q8Q", note: "Specialty sandwiches, fresh seafood, and shrimp and grits." }
+  ];
+
+  function miles(lat, lng) {
+    const R = 3958.8, toRad = d => d * Math.PI / 180;
+    const dLat = toRad(lat - CHURCH.lat), dLng = toRad(lng - CHURCH.lng);
+    const a = Math.sin(dLat/2)**2 + Math.cos(toRad(CHURCH.lat)) * Math.cos(toRad(lat)) * Math.sin(dLng/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+  RESTAURANTS.forEach((r, i) => { r.id = i; r.dist = miles(r.lat, r.lng); });
+  RESTAURANTS.sort((a, b) => a.dist - b.dist);
+
+  const dirLink = r => `https://www.google.com/maps/dir/?api=1&destination=${r.lat},${r.lng}&destination_place_id=${r.place}`;
+  const infoLink = r => `https://www.google.com/maps/search/?api=1&query=${r.lat},${r.lng}&query_place_id=${r.place}`;
+
+  const map = L.map('map', { scrollWheelZoom: false });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
+
+  L.marker([CHURCH.lat, CHURCH.lng], {
+    icon: L.divIcon({ className: '', html: '<div class="pin-church"><span>&#10013;</span></div>', iconSize: [34,34], iconAnchor: [17,34] }),
+    zIndexOffset: 1000
+  }).addTo(map).bindPopup('<div class="pop-name">Stewart Memorial C.M.E. Church</div><div class="pop-meta">1266 Dr. Martin Luther King Jr. Ave.<br>Conference host site</div>');
+
+  const bounds = [[CHURCH.lat, CHURCH.lng]];
+  const markers = {};
+  RESTAURANTS.forEach(r => {
+    bounds.push([r.lat, r.lng]);
+    const m = L.marker([r.lat, r.lng], {
+      icon: L.divIcon({ className: '', html: `<div class="pin-restaurant"><span>&#9733;</span></div>`, iconSize: [24,24], iconAnchor: [12,24] })
+    }).addTo(map);
+    m.bindPopup(
+      `<div class="pop-name">${r.name}</div>
+       <div class="pop-meta">${r.cat} &middot; ${r.price} &middot; ${r.dist.toFixed(1)} mi<br>${r.addr}</div>
+       <div class="pop-links">
+         <a class="pop-dir" href="${dirLink(r)}" target="_blank" rel="noopener">Directions</a>
+         <a class="pop-info" href="${infoLink(r)}" target="_blank" rel="noopener">Details</a>
+       </div>`
+    );
+    markers[r.id] = m;
+  });
+  map.fitBounds(bounds, { padding: [30, 30] });
+
+  const cats = ["All", ...Array.from(new Set(RESTAURANTS.map(r => r.cat)))];
+  const filtersEl = document.getElementById('filters');
+  let activeCat = "All";
+  cats.forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (c === "All" ? ' active' : '');
+    b.textContent = c;
+    b.onclick = () => { activeCat = c; render(); document.querySelectorAll('.chip').forEach(x => x.classList.toggle('active', x.textContent === c)); };
+    filtersEl.appendChild(b);
+  });
+
+  const grid = document.getElementById('grid');
+  const emptyEl = document.getElementById('empty');
+  const countEl = document.getElementById('count');
+
+  function render() {
+    grid.innerHTML = '';
+    const list = RESTAURANTS.filter(r => activeCat === "All" || r.cat === activeCat);
+    emptyEl.style.display = list.length ? 'none' : 'block';
+    countEl.textContent = `Showing ${list.length} of ${RESTAURANTS.length} places` + (activeCat === "All" ? "" : ` in ${activeCat}`);
+
+    RESTAURANTS.forEach(r => {
+      const show = activeCat === "All" || r.cat === activeCat;
+      if (markers[r.id]) show ? map.addLayer(markers[r.id]) : map.removeLayer(markers[r.id]);
+    });
+
+    list.forEach(r => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML =
+        `<p class="card-cat">${r.cat}</p>
+         <h3>${r.name}</h3>
+         <p class="note">${r.note}</p>
+         <p class="addr">${r.addr}</p>
+         <div class="stats">
+           <span>${r.price}</span>
+           <span><b>${r.dist.toFixed(1)}</b> mi from church</span>
+         </div>
+         <div class="card-actions">
+           <a class="btn btn-dir" href="${dirLink(r)}" target="_blank" rel="noopener">Directions</a>
+           <a class="btn btn-info" href="${infoLink(r)}" target="_blank" rel="noopener">Details</a>
+         </div>`;
+      card.addEventListener('click', e => {
+        if (e.target.tagName === 'A') return;
+        map.setView([r.lat, r.lng], 16, { animate: true });
+        markers[r.id].openPopup();
+        document.getElementById('map').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+      grid.appendChild(card);
+    });
+  }
+  render();
+</script>
+</body>
+</html>
